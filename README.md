@@ -130,25 +130,25 @@ redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
 
 ### application.properties 설정
 ```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/devlog?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-spring.datasource.username=root
+spring.datasource.url=****
+spring.datasource.username=****
 spring.datasource.password=****
 
 spring.jpa.hibernate.ddl-auto=validate
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
 
-jwt.secret=your-secret-key-minimum-256-bits
+jwt.secret=****
 jwt.access-token-expiry=3600000
 jwt.refresh-token-expiry=604800000
 
-spring.data.redis.host=localhost
-spring.data.redis.port=6379
+spring.data.redis.host=****
+spring.data.redis.port=****
 
 spring.security.oauth2.client.registration.github.client-id=****
 spring.security.oauth2.client.registration.github.client-secret=****
 spring.security.oauth2.client.registration.github.scope=user:email,read:user
-spring.security.oauth2.client.registration.github.redirect-uri=http://localhost:8080/login/oauth2/code/github
+spring.security.oauth2.client.registration.github.redirect-uri=****
 ```
 
 ### 빌드 및 실행
