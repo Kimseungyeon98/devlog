@@ -36,5 +36,9 @@ out/
 ### VS Code ###
 .vscode/
 
+### Enviroment File  ###
 application-local.properties
 .env
+
+### Redis ###
+dump.rdb
