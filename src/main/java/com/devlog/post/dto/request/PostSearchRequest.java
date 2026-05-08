@@ -1,4 +1,6 @@
 package com.devlog.post.dto.request;
 
-public class PostSearchRequest {
-}
+public record PostSearchRequest(
+        String keyword,
+        String tag
+) {}

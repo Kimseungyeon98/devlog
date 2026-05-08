@@ -1,4 +1,5 @@
 package com.devlog.post.domain;
 
-public class PostStatus {
+public enum PostStatus {
+    DRAFT, PUBLISHED
 }
