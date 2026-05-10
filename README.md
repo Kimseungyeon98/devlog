@@ -9,9 +9,9 @@
 | 항목 | 내용 |
 |------|------|
 | 프로젝트명 | DevLog |
-| 버전 | v0.2.0 |
+| 버전 | v0.3.0 |
 | 시작일 | 2026-04-22 |
-| 마지막 업데이트 | 2026-04-22 |
+| 마지막 업데이트 | 2026-05-08 |
 | 개발 환경 | Java 21 / Spring Boot 4.0.5 |
 | DB | MySQL 8.0.45 |
 | 캐시 | Redis 3.x (Windows) |
@@ -29,7 +29,8 @@
 | DB | MySQL 8.0.45 |
 | Cache | Redis (Lettuce) |
 | OAuth2 | GitHub OAuth2 (spring-boot-starter-oauth2-client) |
-| Docs | SpringDoc OpenAPI (Swagger) 2.5.0 |
+| Query | QueryDSL 5.1.0 |
+| Docs | SpringDoc OpenAPI (Swagger) 2.8.6 |
 | Build | Gradle |
 
 ---
@@ -37,7 +38,7 @@
 ## 🗂 패키지 구조
 
 ```
-src/main/java/com/devlog
+src/main/java/com/devlog/
 ├── auth/
 │   ├── controller/       AuthController.java
 │   ├── service/          AuthService.java, CustomUserDetailsService.java
@@ -52,7 +53,8 @@ src/main/java/com/devlog
 │   ├── JwtAuthenticationEntryPoint.java
 │   └── JwtAccessDeniedHandler.java
 ├── config/
-│   └── SecurityConfig.java
+│   ├── SecurityConfig.java
+│   └── QueryDslConfig.java
 ├── user/
 │   ├── domain/           User.java, UserRole.java, Follow.java, UserAuthProvider.java
 │   ├── repository/       UserRepository.java, FollowRepository.java, UserAuthProviderRepository.java
@@ -61,6 +63,15 @@ src/main/java/com/devlog
 │   └── dto/
 │       ├── request/      SignUpRequest.java, UpdateProfileRequest.java
 │       └── response/     UserProfileResponse.java
+├── post/
+│   ├── domain/           Post.java, PostStatus.java, Tag.java, PostTag.java
+│   ├── repository/       PostRepository.java, PostRepositoryCustom.java
+│   │                     PostRepositoryImpl.java, TagRepository.java, PostTagRepository.java
+│   ├── service/          PostService.java, ViewCountScheduler.java
+│   ├── controller/       PostController.java
+│   └── dto/
+│       ├── request/      CreatePostRequest.java, UpdatePostRequest.java, PostSearchRequest.java
+│       └── response/     PostResponse.java, PostSummaryResponse.java
 └── BaseTimeEntity.java
 ```
 
@@ -88,12 +99,13 @@ src/main/java/com/devlog
 - [x] OAuth2SuccessHandler (JWT 발급)
 - [x] 이메일 비공개 계정 처리 (noreply 이메일 대체)
 
-### v0.3.0 — Post 도메인 `(예정)`
-- [ ] Post 엔티티 설계
-- [ ] 게시글 작성 / 수정 / 삭제 API
-- [ ] 게시글 목록 조회 (페이징)
-- [ ] Tag / Category 연동
-- [ ] 조회수 (Redis 캐싱)
+### v0.3.0 — Post 도메인
+- [x] Post 엔티티 설계 (DRAFT / PUBLISHED 상태)
+- [x] Tag / PostTag 엔티티 설계 (다대다)
+- [x] QueryDSL 동적 검색 (키워드 / 태그)
+- [x] 게시글 작성 / 수정 / 삭제 API
+- [x] 게시글 목록 조회 (페이징)
+- [x] Redis 조회수 캐싱 + 배치 반영 (ViewCountScheduler)
 
 ### v0.4.0 — Comment 도메인 `(예정)`
 - [ ] 중첩 댓글 구조 설계 (인접 리스트 vs 클로저 테이블 검토)
@@ -103,10 +115,9 @@ src/main/java/com/devlog
 - [ ] 게시글 좋아요
 - [ ] 비동기 알림 (Spring Event or @Async)
 
-### v0.6.0 — 검색 / 성능 최적화 `(예정)`
-- [ ] QueryDSL 동적 검색
+### v0.6.0 — 성능 최적화 `(예정)`
 - [ ] N+1 문제 해결
-- [ ] Redis 조회수 배치 반영
+- [ ] 추가 Redis 캐싱 전략
 
 ### v1.0.0 — 배포 `(예정)`
 - [ ] Docker 컨테이너화
@@ -120,7 +131,7 @@ src/main/java/com/devlog
 
 ### 사전 준비
 - Java 21
-- MySQL 8.x — 스키마명 `devlog`
+- MySQL 8.x — 스키마명 `sns`
 - Redis (로컬 실행)
 
 ### Redis 실행
@@ -130,25 +141,25 @@ redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
 
 ### application.properties 설정
 ```properties
-spring.datasource.url=****
-spring.datasource.username=****
+spring.datasource.url=jdbc:mysql://localhost:3306/sns?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+spring.datasource.username=root
 spring.datasource.password=****
 
 spring.jpa.hibernate.ddl-auto=validate
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
 
-jwt.secret=****
+jwt.secret=your-secret-key-minimum-256-bits
 jwt.access-token-expiry=3600000
 jwt.refresh-token-expiry=604800000
 
-spring.data.redis.host=****
-spring.data.redis.port=****
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
 
 spring.security.oauth2.client.registration.github.client-id=****
 spring.security.oauth2.client.registration.github.client-secret=****
 spring.security.oauth2.client.registration.github.scope=user:email,read:user
-spring.security.oauth2.client.registration.github.redirect-uri=****
+spring.security.oauth2.client.registration.github.redirect-uri=http://localhost:8080/login/oauth2/code/github
 ```
 
 ### 빌드 및 실행
@@ -178,9 +189,17 @@ spring.security.oauth2.client.registration.github.redirect-uri=****
 | POST | /api/users/{followingId}/follow | 팔로우 | ✅ |
 | DELETE | /api/users/{followingId}/follow | 언팔로우 | ✅ |
 
----
+### Post
+| Method | URL | 설명 | 인증 |
+|--------|-----|------|------|
+| POST | /api/posts | 게시글 작성 | ✅ |
+| GET | /api/posts | 게시글 목록 검색 | ❌ |
+| GET | /api/posts/{postId} | 게시글 단건 조회 | ❌ |
+| GET | /api/posts/me | 내 게시글 목록 | ✅ |
+| PUT | /api/posts/{postId} | 게시글 수정 | ✅ |
+| DELETE | /api/posts/{postId} | 게시글 삭제 | ✅ |
 
-## 🔥 트러블슈팅
+---
 
 ### 1. @Id import 오류 — 기본 키 인식 실패
 **에러** `지속성 엔티티 'User'에는 기본 키가 포함되어야 합니다.`
@@ -340,9 +359,45 @@ return new OAuth2UserAdapter(user, attributes, role);
 
 ---
 
+### 14. Springdoc + QueryDSL 버전 충돌
+**에러** `Failed to introspect Class [QuerydslPredicateOperationCustomizer]`
+
+**원인** springdoc 2.5.0이 QueryDSL의 `TypeInformation` 클래스를 찾지 못함.
+
+**해결** springdoc 버전 업그레이드.
+```groovy
+implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
+```
+
+---
+
+### 15. Post 태그 수정 시 중복 키 에러
+**에러** `Duplicate entry '1-1' for key 'post_tags.uk_post_tags'`
+
+**원인** `clearTags()` 후 `orphanRemoval`이 즉시 반영되지 않아 같은 태그 재삽입 시 중복 발생.
+
+**해결** `clearTags()` 후 `entityManager.flush()`로 즉시 DB 반영.
+```java
+post.clearTags();
+entityManager.flush();
+applyTags(post, request.tags());
+```
+
+---
+
+### 16. Redis 비밀번호 설정 충돌 — 로컬 환경
+**에러** `ERR Client sent AUTH, but no password is set`
+
+**원인** `application-local.properties`에 `REDIS_PASSWORD`가 설정되어 있지만 로컬 Redis는 비밀번호 없음.
+
+**해결** `application-local.properties`에서 `spring.data.redis.password` 주석 처리.
+
+---
+
 ## 📝 업데이트 로그
 
 | 버전 | 날짜 | 내용 |
 |------|------|------|
+| v0.3.0 | 2026-05-08 | Post 도메인, QueryDSL 검색, Redis 조회수 캐싱 |
 | v0.2.0 | 2026-04-22 | GitHub OAuth2 소셜 로그인 연동 |
 | v0.1.0 | 2026-04-22 | User 도메인, JWT 인증, Redis 연동 |
