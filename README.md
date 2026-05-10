@@ -9,9 +9,9 @@
 | 항목 | 내용 |
 |------|------|
 | 프로젝트명 | DevLog |
-| 버전 | v0.3.0 |
+| 버전 | v0.4.0 |
 | 시작일 | 2026-04-22 |
-| 마지막 업데이트 | 2026-05-08 |
+| 마지막 업데이트 | 2026-05-10 |
 | 개발 환경 | Java 21 / Spring Boot 4.0.5 |
 | DB | MySQL 8.0.45 |
 | 캐시 | Redis 3.x (Windows) |
@@ -72,6 +72,14 @@ src/main/java/com/devlog/
 │   └── dto/
 │       ├── request/      CreatePostRequest.java, UpdatePostRequest.java, PostSearchRequest.java
 │       └── response/     PostResponse.java, PostSummaryResponse.java
+├── comment/
+│   ├── domain/           Comment.java, CommentClosure.java, CommentClosureId.java
+│   ├── repository/       CommentRepository.java, CommentClosureRepository.java
+│   ├── service/          CommentService.java
+│   ├── controller/       CommentController.java
+│   └── dto/
+│       ├── request/      CreateCommentRequest.java, UpdateCommentRequest.java
+│       └── response/     CommentResponse.java
 └── BaseTimeEntity.java
 ```
 
@@ -107,9 +115,13 @@ src/main/java/com/devlog/
 - [x] 게시글 목록 조회 (페이징)
 - [x] Redis 조회수 캐싱 + 배치 반영 (ViewCountScheduler)
 
-### v0.4.0 — Comment 도메인 `(예정)`
-- [ ] 중첩 댓글 구조 설계 (인접 리스트 vs 클로저 테이블 검토)
-- [ ] 댓글 작성 / 수정 / 삭제 API
+### v0.4.0 — Comment 도메인
+- [x] 클로저 테이블 구조 설계
+- [x] Comment / CommentClosure 엔티티
+- [x] 댓글 작성 / 수정 / 삭제 API
+- [x] 대댓글 1단계 제한
+- [x] 소프트 딜리트 (삭제된 댓글입니다. 처리)
+- [x] 댓글 목록 조회 (대댓글 포함)
 
 ### v0.5.0 — Like / Notification `(예정)`
 - [ ] 게시글 좋아요
@@ -199,7 +211,17 @@ spring.security.oauth2.client.registration.github.redirect-uri=http://localhost:
 | PUT | /api/posts/{postId} | 게시글 수정 | ✅ |
 | DELETE | /api/posts/{postId} | 게시글 삭제 | ✅ |
 
+### Comment
+| Method | URL | 설명 | 인증 |
+|--------|-----|------|------|
+| POST | /api/posts/{postId}/comments | 댓글 작성 | ✅ |
+| GET | /api/posts/{postId}/comments | 댓글 목록 조회 | ❌ |
+| PUT | /api/comments/{commentId} | 댓글 수정 | ✅ |
+| DELETE | /api/comments/{commentId} | 댓글 삭제 | ✅ |
+
 ---
+
+## 🔥 트러블슈팅
 
 ### 1. @Id import 오류 — 기본 키 인식 실패
 **에러** `지속성 엔티티 'User'에는 기본 키가 포함되어야 합니다.`
@@ -398,6 +420,7 @@ applyTags(post, request.tags());
 
 | 버전 | 날짜 | 내용 |
 |------|------|------|
+| v0.4.0 | 2026-05-10 | Comment 도메인 (클로저 테이블, 소프트 딜리트) |
 | v0.3.0 | 2026-05-08 | Post 도메인, QueryDSL 검색, Redis 조회수 캐싱 |
 | v0.2.0 | 2026-04-22 | GitHub OAuth2 소셜 로그인 연동 |
 | v0.1.0 | 2026-04-22 | User 도메인, JWT 인증, Redis 연동 |
