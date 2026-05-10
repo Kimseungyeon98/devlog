@@ -9,7 +9,7 @@
 | 항목 | 내용 |
 |------|------|
 | 프로젝트명 | DevLog |
-| 버전 | v0.5.0 |
+| 버전 | v0.6.0 |
 | 시작일 | 2026-04-22 |
 | 마지막 업데이트 | 2026-05-10 |
 | 개발 환경 | Java 21 / Spring Boot 4.0.5 |
@@ -143,9 +143,11 @@ src/main/java/com/devlog/
 - [x] 알림 목록 조회 / 읽음 처리 API
 - [x] 자기 자신 좋아요 시 알림 제외
 
-### v0.6.0 — 성능 최적화 `(예정)`
-- [ ] N+1 문제 해결
-- [ ] 추가 Redis 캐싱 전략
+### v0.6.0 — 성능 최적화
+- [x] N+1 문제 해결 (Post / Comment fetch join)
+- [x] QueryDSL fetch join 적용 (postTags, tag, author)
+- [x] 좋아요 수 Redis 캐싱 (10분 TTL)
+- [x] open-in-view=false 설정
 
 ### v1.0.0 — 배포 `(예정)`
 - [ ] Docker 컨테이너화
@@ -451,6 +453,7 @@ applyTags(post, request.tags());
 
 | 버전 | 날짜 | 내용 |
 |------|------|------|
+| v0.6.0 | 2026-05-10 | 성능 최적화 (N+1 해결, Redis 캐싱, open-in-view) |
 | v0.5.0 | 2026-05-10 | Like / Notification (Spring Event 비동기 알림) |
 | v0.4.0 | 2026-05-10 | Comment 도메인 (클로저 테이블, 소프트 딜리트) |
 | v0.3.0 | 2026-05-08 | Post 도메인, QueryDSL 검색, Redis 조회수 캐싱 |
