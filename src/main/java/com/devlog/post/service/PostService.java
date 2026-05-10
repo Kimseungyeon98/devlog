@@ -15,6 +15,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -79,7 +80,8 @@ public class PostService {
 
     // 내 게시글 목록
     public Page<PostSummaryResponse> getMyPosts(Long userId, Pageable pageable) {
-        return postRepository.findByAuthorIdOrderByCreatedAtDesc(userId, pageable)
+        List<Post> posts = postRepository.findByAuthorIdWithAuthor(userId);
+        return new PageImpl<>(posts, pageable, posts.size())
                 .map(PostSummaryResponse::of);
     }
 

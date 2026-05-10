@@ -9,21 +9,20 @@ import java.util.List;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 
-    // 특정 게시글의 최상위 댓글 조회 (depth=0인 것만)
+    // author fetch join으로 N+1 방지
     @Query("""
         SELECT c FROM Comment c
         JOIN FETCH c.author
-        WHERE c.id IN (
+        WHERE c.post.id = :postId
+        AND c.id IN (
             SELECT cc.descendant.id FROM CommentClosure cc
             WHERE cc.ancestor.id = cc.descendant.id
             AND cc.depth = 0
-            AND c.post.id = :postId
         )
         ORDER BY c.createdAt ASC
     """)
     List<Comment> findRootCommentsByPostId(@Param("postId") Long postId);
 
-    // 특정 댓글의 대댓글 조회
     @Query("""
         SELECT c FROM Comment c
         JOIN FETCH c.author

@@ -7,15 +7,20 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long>, PostRepositoryCustom {
 
-    // 단건 조회 - author fetch join으로 N+1 방지
     @Query("SELECT p FROM Post p JOIN FETCH p.author WHERE p.id = :id")
     Optional<Post> findByIdWithAuthor(@Param("id") Long id);
 
-    // 내 게시글 목록
-    Page<Post> findByAuthorIdOrderByCreatedAtDesc(Long authorId, Pageable pageable);
-
+    // ← fetch join으로 author 한 번에 조회
+    @Query("""
+        SELECT p FROM Post p
+        JOIN FETCH p.author
+        WHERE p.author.id = :authorId
+        ORDER BY p.createdAt DESC
+    """)
+    List<Post> findByAuthorIdWithAuthor(@Param("authorId") Long authorId);
 }

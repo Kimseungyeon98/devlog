@@ -25,9 +25,9 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
     public Page<Post> search(PostSearchRequest request, Pageable pageable) {
         List<Post> content = queryFactory
                 .selectFrom(post)
-                .join(post.author).fetchJoin()
-                .leftJoin(post.postTags, postTag)
-                .leftJoin(postTag.tag, tag)
+                .join(post.author).fetchJoin()          // author N+1 방지
+                .leftJoin(post.postTags, postTag).fetchJoin() // postTags N+1 방지
+                .leftJoin(postTag.tag, tag).fetchJoin() // tag N+1 방지
                 .where(
                         statusPublished(),
                         titleContains(request.keyword()),
@@ -40,7 +40,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 .fetch();
 
         Long total = queryFactory
-                .select(post.count())
+                .select(post.countDistinct())
                 .from(post)
                 .leftJoin(post.postTags, postTag)
                 .leftJoin(postTag.tag, tag)

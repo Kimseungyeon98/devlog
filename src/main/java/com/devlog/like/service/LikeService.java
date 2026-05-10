@@ -13,8 +13,11 @@ import com.devlog.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,9 @@ public class LikeService {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final ApplicationEventPublisher eventPublisher;
+
+    private final RedisTemplate<String, String> redisTemplate;
+    private static final String LIKE_COUNT_KEY = "like:count:";
 
     // 게시글 좋아요 토글
     @Transactional
@@ -51,7 +57,17 @@ public class LikeService {
 
     // 좋아요 수 조회
     public long getLikeCount(Long targetId, LikeTarget targetType) {
-        return likeRepository.countByTargetIdAndTargetType(targetId, targetType);
+        String key = LIKE_COUNT_KEY + targetType.name() + ":" + targetId;
+        String cached = redisTemplate.opsForValue().get(key);
+
+        if (cached != null) {
+            return Long.parseLong(cached);
+        }
+
+        long count = likeRepository.countByTargetIdAndTargetType(targetId, targetType);
+        redisTemplate.opsForValue().set(key, String.valueOf(count),
+                Duration.ofMinutes(10)); // 10분 캐싱
+        return count;
     }
 
     // 좋아요 여부 조회
@@ -62,19 +78,22 @@ public class LikeService {
 
     private boolean toggle(User user, Long targetId,
                            LikeTarget targetType, Long targetOwnerId) {
+        String key = LIKE_COUNT_KEY + targetType.name() + ":" + targetId;
+
         return likeRepository
                 .findByUserIdAndTargetIdAndTargetType(user.getId(), targetId, targetType)
                 .map(like -> {
                     likeRepository.delete(like);
-                    return false; // 좋아요 취소
+                    redisTemplate.delete(key); // 캐시 삭제
+                    return false;
                 })
                 .orElseGet(() -> {
                     likeRepository.save(Like.of(user, targetId, targetType));
-                    // 좋아요 이벤트 발행
+                    redisTemplate.delete(key); // 캐시 삭제
                     eventPublisher.publishEvent(
                             new LikeEvent(user.getId(), targetOwnerId, targetId, targetType)
                     );
-                    return true; // 좋아요 추가
+                    return true;
                 });
     }
 }
