@@ -9,7 +9,7 @@
 | 항목 | 내용 |
 |------|------|
 | 프로젝트명 | DevLog |
-| 버전 | v0.4.0 |
+| 버전 | v0.5.0 |
 | 시작일 | 2026-04-22 |
 | 마지막 업데이트 | 2026-05-10 |
 | 개발 환경 | Java 21 / Spring Boot 4.0.5 |
@@ -72,6 +72,19 @@ src/main/java/com/devlog/
 │   └── dto/
 │       ├── request/      CreatePostRequest.java, UpdatePostRequest.java, PostSearchRequest.java
 │       └── response/     PostResponse.java, PostSummaryResponse.java
+├── like/
+│   ├── domain/           Like.java, LikeTarget.java
+│   ├── event/            LikeEvent.java
+│   ├── repository/       LikeRepository.java
+│   ├── service/          LikeService.java
+│   └── controller/       LikeController.java
+├── notification/
+│   ├── domain/           Notification.java, NotificationType.java
+│   ├── repository/       NotificationRepository.java
+│   ├── service/          NotificationService.java
+│   ├── controller/       NotificationController.java
+│   └── dto/
+│       └── response/     NotificationResponse.java
 ├── comment/
 │   ├── domain/           Comment.java, CommentClosure.java, CommentClosureId.java
 │   ├── repository/       CommentRepository.java, CommentClosureRepository.java
@@ -123,9 +136,12 @@ src/main/java/com/devlog/
 - [x] 소프트 딜리트 (삭제된 댓글입니다. 처리)
 - [x] 댓글 목록 조회 (대댓글 포함)
 
-### v0.5.0 — Like / Notification `(예정)`
-- [ ] 게시글 좋아요
-- [ ] 비동기 알림 (Spring Event or @Async)
+### v0.5.0 — Like / Notification
+- [x] Like 엔티티 설계 (게시글 + 댓글 통합)
+- [x] 게시글 / 댓글 좋아요 토글 API
+- [x] Spring Event 기반 비동기 알림 처리
+- [x] 알림 목록 조회 / 읽음 처리 API
+- [x] 자기 자신 좋아요 시 알림 제외
 
 ### v0.6.0 — 성능 최적화 `(예정)`
 - [ ] N+1 문제 해결
@@ -218,6 +234,21 @@ spring.security.oauth2.client.registration.github.redirect-uri=http://localhost:
 | GET | /api/posts/{postId}/comments | 댓글 목록 조회 | ❌ |
 | PUT | /api/comments/{commentId} | 댓글 수정 | ✅ |
 | DELETE | /api/comments/{commentId} | 댓글 삭제 | ✅ |
+
+### Like
+| Method | URL | 설명 | 인증 |
+|--------|-----|------|------|
+| POST | /api/posts/{postId}/likes | 게시글 좋아요 토글 | ✅ |
+| GET | /api/posts/{postId}/likes | 게시글 좋아요 수 | ❌ |
+| POST | /api/comments/{commentId}/likes | 댓글 좋아요 토글 | ✅ |
+| GET | /api/comments/{commentId}/likes | 댓글 좋아요 수 | ❌ |
+
+### Notification
+| Method | URL | 설명 | 인증 |
+|--------|-----|------|------|
+| GET | /api/notifications | 알림 목록 조회 | ✅ |
+| GET | /api/notifications/unread-count | 읽지 않은 알림 수 | ✅ |
+| PATCH | /api/notifications/{id}/read | 알림 읽음 처리 | ✅ |
 
 ---
 
@@ -420,6 +451,7 @@ applyTags(post, request.tags());
 
 | 버전 | 날짜 | 내용 |
 |------|------|------|
+| v0.5.0 | 2026-05-10 | Like / Notification (Spring Event 비동기 알림) |
 | v0.4.0 | 2026-05-10 | Comment 도메인 (클로저 테이블, 소프트 딜리트) |
 | v0.3.0 | 2026-05-08 | Post 도메인, QueryDSL 검색, Redis 조회수 캐싱 |
 | v0.2.0 | 2026-04-22 | GitHub OAuth2 소셜 로그인 연동 |
