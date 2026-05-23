@@ -1,5 +1,6 @@
 package com.devlog.notification.service;
 
+import com.devlog.comment.event.CommentEvent;
 import com.devlog.like.event.LikeEvent;
 import com.devlog.notification.domain.Notification;
 import com.devlog.notification.domain.NotificationType;
@@ -69,6 +70,31 @@ public class NotificationService {
         );
 
         pushToEmitter(event.targetOwnerId(), NotificationResponse.of(notification));
+    }
+
+    @Async
+    @EventListener
+    @Transactional
+    public void handleCommentEvent(CommentEvent event) {
+        if (event.parentAuthorId() == null) {
+            // 최상위 댓글 → 게시글 작성자에게 알림
+            if (event.actorId().equals(event.postAuthorId())) return;
+            User postAuthor = userRepository.findById(event.postAuthorId()).orElse(null);
+            if (postAuthor == null) return;
+            Notification notification = notificationRepository.save(
+                    Notification.of(postAuthor, "게시글에 새 댓글이 달렸습니다.", NotificationType.COMMENT, event.postId())
+            );
+            pushToEmitter(event.postAuthorId(), NotificationResponse.of(notification));
+        } else {
+            // 대댓글 → 부모 댓글 작성자에게 알림
+            if (event.actorId().equals(event.parentAuthorId())) return;
+            User parentAuthor = userRepository.findById(event.parentAuthorId()).orElse(null);
+            if (parentAuthor == null) return;
+            Notification notification = notificationRepository.save(
+                    Notification.of(parentAuthor, "댓글에 답글이 달렸습니다.", NotificationType.COMMENT_REPLY, event.postId())
+            );
+            pushToEmitter(event.parentAuthorId(), NotificationResponse.of(notification));
+        }
     }
 
     public List<NotificationResponse> getNotifications(Long userId) {

@@ -9,7 +9,7 @@
 | 항목 | 내용 |
 |------|------|
 | 프로젝트명 | DevLog |
-| 버전 | v0.8.0 |
+| 버전 | v0.9.0 |
 | 시작일 | 2026-04-22 |
 | 마지막 업데이트 | 2026-05-23 |
 | 개발 환경 | Java 21 / Spring Boot 4.0.5 |
@@ -96,6 +96,7 @@ src/main/java/com/devlog/
 │       └── response/     NotificationResponse.java
 ├── comment/
 │   ├── domain/           Comment.java, CommentClosure.java, CommentClosureId.java
+│   ├── event/            CommentEvent.java
 │   ├── repository/       CommentRepository.java, CommentClosureRepository.java
 │   ├── service/          CommentService.java
 │   ├── controller/       CommentController.java
@@ -161,7 +162,14 @@ src/main/java/com/devlog/
 ### v0.7.0 — 시리즈 / SSE 알림 / 팔로우 개선
 - [x] **시리즈 기능** — Series / SeriesPost 엔티티, CRUD + 게시글 추가/제거 API
 - [x] **SSE 실시간 알림** — SseEmitter 기반 좋아요 알림 즉시 push
-- [x] **팔로우 isFollowing** — 프로필 API에 현재 로그인 유저의 팔로우 여부 포함
+- [x] **팔로우 isFollowing** — 프로필 API엔 현재 로그인 유저의 팔로우 여부 포함
+
+### v0.9.0 — 댓글 / 답글 알림
+- [x] **CommentEvent** — Spring Event 기반 비동기 처리
+- [x] 게시글에 새 댓글 달리면 게시글 작성자에게 `COMMENT` 알림
+- [x] 댓글에 답글 달리면 부모 댓글 작성자에게 `COMMENT_REPLY` 알림
+- [x] SSE 실시간 push 연동 (기존 SseEmitter 인프라 재사용)
+- [x] 자기 자신 댓글 시 알림 제외
 
 ### v1.0.0 — 배포 `(예정)`
 - [ ] Docker 컨테이너화
@@ -480,6 +488,7 @@ applyTags(post, request.tags());
 
 | 버전 | 날짜 | 내용 |
 |------|------|------|
+| v0.9.0 | 2026-05-23 | 댓글/답글 알림 (CommentEvent, COMMENT / COMMENT_REPLY 타입) |
 | v0.8.0 | 2026-05-23 | README 정비 (트러블슈팅 전체 복원, 패키지 구조 상세화) |
 | v0.7.0 | 2026-05-23 | 시리즈 기능, SSE 실시간 알림, 팔로우 isFollowing |
 | v0.6.0 | 2026-05-10 | 성능 최적화 (N+1 해결, Redis 캐싱, open-in-view) |
