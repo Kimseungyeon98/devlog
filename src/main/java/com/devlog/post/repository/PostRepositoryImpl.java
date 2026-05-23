@@ -25,12 +25,12 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
     public Page<Post> search(PostSearchRequest request, Pageable pageable) {
         List<Post> content = queryFactory
                 .selectFrom(post)
-                .join(post.author).fetchJoin()          // author N+1 방지
-                .leftJoin(post.postTags, postTag).fetchJoin() // postTags N+1 방지
-                .leftJoin(postTag.tag, tag).fetchJoin() // tag N+1 방지
+                .join(post.author).fetchJoin()
+                .leftJoin(post.postTags, postTag).fetchJoin()
+                .leftJoin(postTag.tag, tag).fetchJoin()
                 .where(
                         statusPublished(),
-                        titleContains(request.keyword()),
+                        keywordSearch(request.keyword()),
                         tagNameEq(request.tag())
                 )
                 .distinct()
@@ -46,7 +46,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 .leftJoin(postTag.tag, tag)
                 .where(
                         statusPublished(),
-                        titleContains(request.keyword()),
+                        keywordSearch(request.keyword()),
                         tagNameEq(request.tag())
                 )
                 .fetchOne();
@@ -54,17 +54,16 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         return new PageImpl<>(content, pageable, total != null ? total : 0);
     }
 
-    // 발행된 게시글만
     private BooleanExpression statusPublished() {
         return post.status.eq(PostStatus.PUBLISHED);
     }
 
-    // 제목 검색 (null이면 조건 무시)
-    private BooleanExpression titleContains(String keyword) {
-        return StringUtils.hasText(keyword) ? post.title.containsIgnoreCase(keyword) : null;
+    private BooleanExpression keywordSearch(String keyword) {
+        if (!StringUtils.hasText(keyword)) return null;
+        return post.title.containsIgnoreCase(keyword)
+                .or(post.content.containsIgnoreCase(keyword));
     }
 
-    // 태그 검색 (null이면 조건 무시)
     private BooleanExpression tagNameEq(String tagName) {
         return StringUtils.hasText(tagName) ? tag.name.eq(tagName.toLowerCase()) : null;
     }

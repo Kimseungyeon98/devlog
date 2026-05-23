@@ -6,7 +6,9 @@ import com.devlog.notification.domain.Notification;
 import com.devlog.notification.domain.NotificationType;
 import com.devlog.notification.dto.response.NotificationResponse;
 import com.devlog.notification.repository.NotificationRepository;
+import com.devlog.post.event.PostPublishedEvent;
 import com.devlog.user.domain.User;
+import com.devlog.user.repository.FollowRepository;
 import com.devlog.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final FollowRepository followRepository;
 
     private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
     private static final long SSE_TIMEOUT = 600_000L;
@@ -68,7 +71,6 @@ public class NotificationService {
         Notification notification = notificationRepository.save(
                 Notification.of(owner, content, type, event.targetId())
         );
-
         pushToEmitter(event.targetOwnerId(), NotificationResponse.of(notification));
     }
 
@@ -77,7 +79,6 @@ public class NotificationService {
     @Transactional
     public void handleCommentEvent(CommentEvent event) {
         if (event.parentAuthorId() == null) {
-            // 최상위 댓글 → 게시글 작성자에게 알림
             if (event.actorId().equals(event.postAuthorId())) return;
             User postAuthor = userRepository.findById(event.postAuthorId()).orElse(null);
             if (postAuthor == null) return;
@@ -86,7 +87,6 @@ public class NotificationService {
             );
             pushToEmitter(event.postAuthorId(), NotificationResponse.of(notification));
         } else {
-            // 대댓글 → 부모 댓글 작성자에게 알림
             if (event.actorId().equals(event.parentAuthorId())) return;
             User parentAuthor = userRepository.findById(event.parentAuthorId()).orElse(null);
             if (parentAuthor == null) return;
@@ -94,6 +94,22 @@ public class NotificationService {
                     Notification.of(parentAuthor, "댓글에 답글이 달렸습니다.", NotificationType.COMMENT_REPLY, event.postId())
             );
             pushToEmitter(event.parentAuthorId(), NotificationResponse.of(notification));
+        }
+    }
+
+    @Async
+    @EventListener
+    @Transactional
+    public void handlePostPublishedEvent(PostPublishedEvent event) {
+        List<User> followers = followRepository.findFollowersByFollowingId(event.authorId());
+        for (User follower : followers) {
+            Notification notification = notificationRepository.save(
+                    Notification.of(follower,
+                            "\"" + event.postTitle() + "\" 새 글이 발행되었습니다.",
+                            NotificationType.POST_PUBLISHED,
+                            event.postId())
+            );
+            pushToEmitter(follower.getId(), NotificationResponse.of(notification));
         }
     }
 
