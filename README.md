@@ -488,6 +488,7 @@ applyTags(post, request.tags());
 
 | 버전 | 날짜 | 내용 |
 |------|------|------|
+| v1.0.0 | 2026-05-23 | 팔로워 발행 알림(PostPublishedEvent), 로컬 이미지 업로드(`POST /api/images`), 통계 API(`GET /api/stats/my`), 검색 강화(제목+본문) |
 | v0.9.0 | 2026-05-23 | 댓글/답글 알림 (CommentEvent, COMMENT / COMMENT_REPLY 타입) |
 | v0.8.0 | 2026-05-23 | README 정비 (트러블슈팅 전체 복원, 패키지 구조 상세화) |
 | v0.7.0 | 2026-05-23 | 시리즈 기능, SSE 실시간 알림, 팔로우 isFollowing |
