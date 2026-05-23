@@ -9,17 +9,22 @@ public record UserProfileResponse(
         String bio,
         String profileImageUrl,
         long followerCount,
-        long followingCount
+        long followingCount,
+        Boolean isFollowing
 ) {
     public static UserProfileResponse of(User user, long followerCount, long followingCount) {
         return new UserProfileResponse(
-                user.getId(),
-                user.getUsername(),
-                user.getNickname(),
-                user.getBio(),
-                user.getProfileImageUrl(),
-                followerCount,
-                followingCount
+                user.getId(), user.getUsername(), user.getNickname(),
+                user.getBio(), user.getProfileImageUrl(),
+                followerCount, followingCount, null
+        );
+    }
+
+    public static UserProfileResponse of(User user, long followerCount, long followingCount, boolean isFollowing) {
+        return new UserProfileResponse(
+                user.getId(), user.getUsername(), user.getNickname(),
+                user.getBio(), user.getProfileImageUrl(),
+                followerCount, followingCount, isFollowing
         );
     }
 }

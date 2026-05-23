@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true) // 기본을 readOnly로, 쓰기 메서드만 @Transactional 추가
+@Transactional(readOnly = true)
 public class UserService {
 
     private final UserRepository userRepository;
@@ -25,12 +25,9 @@ public class UserService {
     @Transactional
     public Long signUp(SignUpRequest request) {
         validateDuplicate(request.email(), request.username());
-
         User user = User.createLocalUser(
-                request.username(),
-                request.email(),
-                passwordEncoder.encode(request.password()),
-                request.nickname()
+                request.username(), request.email(),
+                passwordEncoder.encode(request.password()), request.nickname()
         );
         return userRepository.save(user).getId();
     }
@@ -41,6 +38,20 @@ public class UserService {
         long followerCount = followRepository.countByFollowing(user);
         long followingCount = followRepository.countByFollower(user);
         return UserProfileResponse.of(user, followerCount, followingCount);
+    }
+
+    public UserProfileResponse getProfile(String username, Long currentUserId) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
+        long followerCount = followRepository.countByFollowing(user);
+        long followingCount = followRepository.countByFollower(user);
+        if (currentUserId == null) {
+            return UserProfileResponse.of(user, followerCount, followingCount);
+        }
+        User currentUser = userRepository.findById(currentUserId).orElse(null);
+        boolean isFollowing = currentUser != null &&
+                followRepository.existsByFollowerAndFollowing(currentUser, user);
+        return UserProfileResponse.of(user, followerCount, followingCount, isFollowing);
     }
 
     public UserProfileResponse getProfileById(Long userId) {
@@ -55,7 +66,6 @@ public class UserService {
     public void updateProfile(Long userId, UpdateProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
-
         user.updateProfile(request.nickname(), request.bio(), request.profileImageUrl());
     }
 
@@ -66,7 +76,6 @@ public class UserService {
         }
         User follower = userRepository.findById(followerId).orElseThrow();
         User following = userRepository.findById(followingId).orElseThrow();
-
         if (followRepository.existsByFollowerAndFollowing(follower, following)) {
             throw new IllegalStateException("이미 팔로우하고 있습니다.");
         }
