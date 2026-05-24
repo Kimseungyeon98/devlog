@@ -43,7 +43,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/api/posts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/{postId}").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/posts/{postId}/comments").permitAll() // ← 추가
+                        .requestMatchers(HttpMethod.GET, "/api/posts/{postId}/comments").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/series/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/users/*/series").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/users/signup").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/*/profile").permitAll()
@@ -70,5 +73,4 @@ public class SecurityConfig {
             AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
-
 }

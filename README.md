@@ -9,9 +9,9 @@
 | 항목 | 내용 |
 |------|------|
 | 프로젝트명 | DevLog |
-| 버전 | v0.6.0 |
+| 버전 | v0.9.0 |
 | 시작일 | 2026-04-22 |
-| 마지막 업데이트 | 2026-05-10 |
+| 마지막 업데이트 | 2026-05-23 |
 | 개발 환경 | Java 21 / Spring Boot 4.0.5 |
 | DB | MySQL 8.0.45 |
 | 캐시 | Redis 3.x (Windows) |
@@ -30,6 +30,7 @@
 | Cache | Redis (Lettuce) |
 | OAuth2 | GitHub OAuth2 (spring-boot-starter-oauth2-client) |
 | Query | QueryDSL 5.1.0 |
+| 실시간 알림 | Spring SseEmitter |
 | Docs | SpringDoc OpenAPI (Swagger) 2.8.6 |
 | Build | Gradle |
 
@@ -72,6 +73,14 @@ src/main/java/com/devlog/
 │   └── dto/
 │       ├── request/      CreatePostRequest.java, UpdatePostRequest.java, PostSearchRequest.java
 │       └── response/     PostResponse.java, PostSummaryResponse.java
+├── series/
+│   ├── domain/           Series.java, SeriesPost.java
+│   ├── repository/       SeriesRepository.java, SeriesPostRepository.java
+│   ├── service/          SeriesService.java
+│   ├── controller/       SeriesController.java
+│   └── dto/
+│       ├── request/      CreateSeriesRequest.java, UpdateSeriesRequest.java, AddPostToSeriesRequest.java
+│       └── response/     SeriesResponse.java, SeriesSummaryResponse.java, SeriesPostResponse.java
 ├── like/
 │   ├── domain/           Like.java, LikeTarget.java
 │   ├── event/            LikeEvent.java
@@ -87,6 +96,7 @@ src/main/java/com/devlog/
 │       └── response/     NotificationResponse.java
 ├── comment/
 │   ├── domain/           Comment.java, CommentClosure.java, CommentClosureId.java
+│   ├── event/            CommentEvent.java
 │   ├── repository/       CommentRepository.java, CommentClosureRepository.java
 │   ├── service/          CommentService.java
 │   ├── controller/       CommentController.java
@@ -148,6 +158,18 @@ src/main/java/com/devlog/
 - [x] QueryDSL fetch join 적용 (postTags, tag, author)
 - [x] 좋아요 수 Redis 캐싱 (10분 TTL)
 - [x] open-in-view=false 설정
+
+### v0.7.0 — 시리즈 / SSE 알림 / 팔로우 개선
+- [x] **시리즈 기능** — Series / SeriesPost 엔티티, CRUD + 게시글 추가/제거 API
+- [x] **SSE 실시간 알림** — SseEmitter 기반 좋아요 알림 즉시 push
+- [x] **팔로우 isFollowing** — 프로필 API엔 현재 로그인 유저의 팔로우 여부 포함
+
+### v0.9.0 — 댓글 / 답글 알림
+- [x] **CommentEvent** — Spring Event 기반 비동기 처리
+- [x] 게시글에 새 댓글 달리면 게시글 작성자에게 `COMMENT` 알림
+- [x] 댓글에 답글 달리면 부모 댓글 작성자에게 `COMMENT_REPLY` 알림
+- [x] SSE 실시간 push 연동 (기존 SseEmitter 인프라 재사용)
+- [x] 자기 자신 댓글 시 알림 제외
 
 ### v1.0.0 — 배포 `(예정)`
 - [ ] Docker 컨테이너화
@@ -213,7 +235,7 @@ spring.security.oauth2.client.registration.github.redirect-uri=http://localhost:
 | Method | URL | 설명 | 인증 |
 |--------|-----|------|------|
 | POST | /api/users/signup | 회원가입 | ❌ |
-| GET | /api/users/{username}/profile | 프로필 조회 | ❌ |
+| GET | /api/users/{username}/profile | 프로필 조회 (isFollowing 포함) | ❌ |
 | GET | /api/users/me | 내 정보 조회 | ✅ |
 | PUT | /api/users/me | 프로필 수정 | ✅ |
 | POST | /api/users/{followingId}/follow | 팔로우 | ✅ |
@@ -228,6 +250,18 @@ spring.security.oauth2.client.registration.github.redirect-uri=http://localhost:
 | GET | /api/posts/me | 내 게시글 목록 | ✅ |
 | PUT | /api/posts/{postId} | 게시글 수정 | ✅ |
 | DELETE | /api/posts/{postId} | 게시글 삭제 | ✅ |
+
+### Series
+| Method | URL | 설명 | 인증 |
+|--------|-----|------|------|
+| POST | /api/series | 시리즈 생성 | ✅ |
+| GET | /api/series/{seriesId} | 시리즈 상세 | ❌ |
+| PUT | /api/series/{seriesId} | 시리즈 수정 | ✅ |
+| DELETE | /api/series/{seriesId} | 시리즈 삭제 | ✅ |
+| GET | /api/series/user/{username} | 유저 시리즈 목록 | ❌ |
+| POST | /api/series/{seriesId}/posts | 시리즈에 게시글 추가 | ✅ |
+| DELETE | /api/series/{seriesId}/posts/{postId} | 시리즈에서 게시글 제거 | ✅ |
+| GET | /api/series/post/{postId} | 게시글이 속한 시리즈 | ❌ |
 
 ### Comment
 | Method | URL | 설명 | 인증 |
@@ -248,6 +282,7 @@ spring.security.oauth2.client.registration.github.redirect-uri=http://localhost:
 ### Notification
 | Method | URL | 설명 | 인증 |
 |--------|-----|------|------|
+| GET | /api/notifications/subscribe | SSE 연결 | ✅ |
 | GET | /api/notifications | 알림 목록 조회 | ✅ |
 | GET | /api/notifications/unread-count | 읽지 않은 알림 수 | ✅ |
 | PATCH | /api/notifications/{id}/read | 알림 읽음 처리 | ✅ |
@@ -453,6 +488,10 @@ applyTags(post, request.tags());
 
 | 버전 | 날짜 | 내용 |
 |------|------|------|
+| v1.0.0 | 2026-05-23 | 팔로워 발행 알림(PostPublishedEvent), 로컬 이미지 업로드(`POST /api/images`), 통계 API(`GET /api/stats/my`), 검색 강화(제목+본문) |
+| v0.9.0 | 2026-05-23 | 댓글/답글 알림 (CommentEvent, COMMENT / COMMENT_REPLY 타입) |
+| v0.8.0 | 2026-05-23 | README 정비 (트러블슈팅 전체 복원, 패키지 구조 상세화) |
+| v0.7.0 | 2026-05-23 | 시리즈 기능, SSE 실시간 알림, 팔로우 isFollowing |
 | v0.6.0 | 2026-05-10 | 성능 최적화 (N+1 해결, Redis 캐싱, open-in-view) |
 | v0.5.0 | 2026-05-10 | Like / Notification (Spring Event 비동기 알림) |
 | v0.4.0 | 2026-05-10 | Comment 도메인 (클로저 테이블, 소프트 딜리트) |
