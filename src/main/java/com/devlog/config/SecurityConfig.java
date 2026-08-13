@@ -44,6 +44,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/posts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/{postId}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/{postId}/comments").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/snippets").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/snippets/{snippetId}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/series/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/*/series").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
